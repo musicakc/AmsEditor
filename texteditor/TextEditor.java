@@ -7,12 +7,14 @@ import java.io.*;
 import java.util.*;
 import javax.swing.*;
 
+
 public class TextEditor {
 
     JFrame frame;
     JFileChooser filechooser;
     JPanel panel;
     JTextArea jta;
+    File f;
     
     public static void main(String[] args) {
         TextEditor editor=new TextEditor();
@@ -45,7 +47,13 @@ public class TextEditor {
     JMenuItem saveMenuItem=new JMenuItem("Save");
     saveMenuItem.addActionListener(new SaveMenuListener());
     
+    JMenuItem saveAsMenuItem=new JMenuItem("Save As");
+    filechooser.setFileFilter(new TxtFilter());
+    saveAsMenuItem.addActionListener(new SaveAsMenuListener());
+    
     JMenuItem openMenuItem=new JMenuItem("Open");
+    filechooser.setFileFilter(new TxtFilter());
+     
     openMenuItem.addActionListener(new OpenMenuListener());
     
     JMenuItem exitMenuItem=new JMenuItem("Exit");
@@ -54,6 +62,7 @@ public class TextEditor {
     //Adding Menu Items to the Menu
     file.add(newMenuItem);
     file.add(saveMenuItem);
+    file.add(saveAsMenuItem);
     file.add(openMenuItem);
     file.add(exitMenuItem);
     menubar.add(file);
@@ -63,6 +72,7 @@ public class TextEditor {
     panel.setLayout(new BorderLayout());
     panel.add(jta);
     frame.setSize(400,600);
+    
     frame.setVisible(true);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
@@ -76,7 +86,25 @@ public class TextEditor {
                 jta.setText("");
             }
     }
+    
     class SaveMenuListener implements ActionListener{
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            FileWriter filew=null;
+            try{
+            filew=new FileWriter(f);
+            
+            }catch(IOException e1){
+                e1.printStackTrace();
+            }
+            PrintWriter fw=new PrintWriter(filew);
+            fw.print(jta.getText()+"\n");
+        }
+    
+    }
+    
+    class SaveAsMenuListener implements ActionListener{
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -96,6 +124,7 @@ public class TextEditor {
                 }
                 }
     }
+    
     class OpenMenuListener implements ActionListener{
 
             @Override
@@ -104,6 +133,7 @@ public class TextEditor {
 			int returnVal=filechooser.showOpenDialog(frame);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				System.out.println("Opening: " + filechooser.getSelectedFile());
+                                setTitle("AmsEditor-"+f);
 				try {
                                     String filepath;
                                     File myFile=filechooser.getSelectedFile();
@@ -132,5 +162,16 @@ public class TextEditor {
 		}
 	}
     
-    
+    private class TxtFilter extends FileFilter
+    {
+        public boolean accept(File f)
+        {
+            return f.getName().toLowerCase().endsWith(".txt")||f.isDirectory();
+        }
+        
+        public String getDescription()
+        {
+            return "Text File";
+        }
+    }
 }
