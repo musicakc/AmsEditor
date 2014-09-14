@@ -1,13 +1,13 @@
 package texteditor;
 
 import java.awt.*;
-import java.awt.Font;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.*;
 import static java.awt.event.KeyEvent.VK_S;
 import java.io.*;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 import javax.swing.*;
 
 import javax.swing.filechooser.FileFilter;
@@ -16,6 +16,7 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Document;
 import javax.swing.text.Highlighter;
 import javax.swing.text.JTextComponent;
+import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 
 
@@ -96,13 +97,38 @@ public class TextEditor {
     
     JMenu edit=new JMenu("Edit");
     
-    JMenuItem undoMenuItem=new JMenuItem("Undo");
-    undoMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z,InputEvent.CTRL_MASK));
-    undoMenuItem.addActionListener(new UndoMenuListener());
-    
     JMenuItem redoMenuItem=new JMenuItem("Redo");
     redoMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,InputEvent.CTRL_MASK));
-    redoMenuItem.addActionListener(new RedoMenuListener());
+    
+    
+    JMenuItem undoMenuItem=new JMenuItem("Undo");
+    undoMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z,InputEvent.CTRL_MASK));
+    undoMenuItem.addActionListener(new ActionListener()
+      {
+         public void actionPerformed(ActionEvent event)
+         {
+            if (undoManager.canUndo())
+            {
+               undoManager.undo();
+            }
+            undoMenuItem.setEnabled(undoManager.canUndo());
+            redoMenuItem.setEnabled(undoManager.canRedo());
+         }
+      });
+    
+     redoMenuItem.addActionListener(new ActionListener()
+      {
+         public void actionPerformed(ActionEvent event)
+         {
+            if (undoManager.canRedo())
+            {
+               undoManager.redo();
+            }
+            undoMenuItem.setEnabled(undoManager.canUndo());
+            redoMenuItem.setEnabled(undoManager.canRedo());
+         }
+      });
+    
     
     JMenuItem cutMenuItem=new JMenuItem("Cut");
     cutMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X,InputEvent.CTRL_MASK));
@@ -115,6 +141,9 @@ public class TextEditor {
     JMenuItem pasteMenuItem=new JMenuItem("Paste");
     pasteMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V,InputEvent.CTRL_MASK));
     pasteMenuItem.addActionListener(new PasteListener());
+    
+    undoMenuItem.setEnabled(false);
+    redoMenuItem.setEnabled(false);
     
     //Adding Menu Items to the Menu
     edit.add(undoMenuItem);
@@ -282,23 +311,8 @@ public class TextEditor {
 		}
 	}
     
-    class UndoMenuListener implements ActionListener{
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            undoManager.undo();
-        }
             
-    } 
-    
-    class RedoMenuListener implements ActionListener{
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            undoManager.redo();
-        }
-            
-    } 
+     
     
     private class CutListener implements ActionListener{
 
