@@ -6,23 +6,23 @@ import java.awt.Font;
 import java.awt.event.*;
 import static java.awt.event.KeyEvent.VK_S;
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
 import javax.swing.*;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
 
-import javax.swing.filechooser.FileFilter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Document;
 import javax.swing.text.Highlighter;
 import javax.swing.text.JTextComponent;
+import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 
 
 public class TextEditor {
 
-    UndoManager undoManager=new UndoManager();
+    UndoManager undoManager = new UndoManager();
     JFrame frame;
     JFileChooser filechooser;
     JPanel panel;
@@ -32,6 +32,7 @@ public class TextEditor {
     Font f1;
     String copied;
     
+    // Text Editor runs from here
     public static void main(String[] args) {
         TextEditor editor=new TextEditor();
         editor.run();
@@ -48,11 +49,13 @@ public class TextEditor {
         jta.setLineWrap(true);
         jta.setWrapStyleWord(true);
         
+        //Initial fonts
         f1=new Font("Lucida Console",Font.PLAIN,15);
         jta.setFont(f1);
     
         tf=new JTextField();
            
+        //Look and Feel of Editor
         try{
             UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
         }catch(Exception ex)
@@ -62,7 +65,10 @@ public class TextEditor {
     
     JMenuBar menubar=new JMenuBar();
     JMenu file=new JMenu("File");
+    
     //Adding Menu Items
+    
+    //File Menu options
     JMenuItem newMenuItem=new JMenuItem("New");
     newMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,InputEvent.CTRL_MASK));
     newMenuItem.addActionListener(new NewMenuListener());
@@ -86,7 +92,7 @@ public class TextEditor {
     saveMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,InputEvent.CTRL_MASK));
     exitMenuItem.addActionListener(new ExitMenuListener());
     
-    //Adding Menu Items to the Menu
+    //Adding File Menu Items to the Menu
     file.add(newMenuItem);
     file.add(openMenuItem);
     file.add(saveMenuItem);
@@ -97,38 +103,21 @@ public class TextEditor {
     
     JMenu edit=new JMenu("Edit");
     
-    JMenuItem redoMenuItem=new JMenuItem("Redo");
-    redoMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,InputEvent.CTRL_MASK));
-    
-    
+    // Adding Edit Menu Items to Menu
     JMenuItem undoMenuItem=new JMenuItem("Undo");
     undoMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z,InputEvent.CTRL_MASK));
-    undoMenuItem.addActionListener(new ActionListener()
-      {
-         public void actionPerformed(ActionEvent event)
-         {
-            if (undoManager.canUndo())
-            {
-               undoManager.undo();
+    jta.getDocument().addUndoableEditListener(new UndoableEditListener() {
+
+            @Override
+            public void undoableEditHappened(UndoableEditEvent e) {
+                undoManager.addEdit(e.getEdit());
             }
-            undoMenuItem.setEnabled(undoManager.canUndo());
-            redoMenuItem.setEnabled(undoManager.canRedo());
-         }
-      });
+        });
     
-     redoMenuItem.addActionListener(new ActionListener()
-      {
-         public void actionPerformed(ActionEvent event)
-         {
-            if (undoManager.canRedo())
-            {
-               undoManager.redo();
-            }
-            undoMenuItem.setEnabled(undoManager.canUndo());
-            redoMenuItem.setEnabled(undoManager.canRedo());
-         }
-      });
     
+    JMenuItem redoMenuItem=new JMenuItem("Redo");
+    redoMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,InputEvent.CTRL_MASK));
+    redoMenuItem.addActionListener(new redo());
     
     JMenuItem cutMenuItem=new JMenuItem("Cut");
     cutMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X,InputEvent.CTRL_MASK));
@@ -145,7 +134,7 @@ public class TextEditor {
     undoMenuItem.setEnabled(false);
     redoMenuItem.setEnabled(false);
     
-    //Adding Menu Items to the Menu
+    //Adding Edit Menu Items to the Menu
     edit.add(undoMenuItem);
     edit.add(redoMenuItem);
     edit.addSeparator();
@@ -154,67 +143,93 @@ public class TextEditor {
     edit.add(pasteMenuItem);
     
     
+    //Search Menu
     JMenu search=new JMenu("Search");
       
+    //Adding Search Menu items to Menu
     JMenuItem look=new JMenuItem("Find");
     look.setMnemonic(VK_S);
     look.addActionListener(new Find(jta));
     
     search.add(look);
-       
+    
+    //Format Menu
     JMenu format=new JMenu("Format");
+    
+    //Adding Format Menu Items to Menu
     JMenu font=new JMenu("Font");
     JMenu font1=new JMenu("Font Style");
     JMenu font2=new JMenu("Font Size");
     
     JMenuItem name1=new JMenuItem("Courier");
     name1.addActionListener(new FontMenuC());
+    
     JMenuItem name2=new JMenuItem("Sans Serif");
     name2.addActionListener(new FontMenuS());
+    
     JMenuItem name3=new JMenuItem("Monotype Corsiva");
     name3.addActionListener(new FontMenuM());
+    
     JMenuItem name4=new JMenuItem("Arial");
     name4.addActionListener(new FontMenuA());
+    
+    //Adding menu items
     font.add(name1);
     font.add(name2);
     font.add(name3);
     font.add(name4);
     
+    //Adding font types
     JMenuItem sname1=new JMenuItem("Regular");
     sname1.addActionListener(new FontMenuR());
+    
     JMenuItem sname2=new JMenuItem("Bold");
     sname2.addActionListener(new FontMenuB());
+    
     JMenuItem sname3=new JMenuItem("Italic");
     sname3.addActionListener(new FontMenuI());
     
+    //Adding menu items
     font1.add(sname1);
     font1.add(sname2);
     font1.add(sname3);
     
+    //Adding font sizes
     JMenuItem zname1=new JMenuItem("12");
     zname1.addActionListener(new FontMenuTwelve());
+    
     JMenuItem zname2=new JMenuItem("14");
     zname2.addActionListener(new FontMenuFourteen());
+    
     JMenuItem zname3=new JMenuItem("18");
     zname3.addActionListener(new FontMenuEighteen());
+    
     JMenuItem zname4=new JMenuItem("20");
     zname4.addActionListener(new FontMenuTwenty());
     
+    //Adding menu items
     font2.add(zname1);
     font2.add(zname2);
     font2.add(zname3);
     font2.add(zname4);
     
+    
+    //Adding Format Menu items to menu
     format.add(font);
     format.add(font1);
     format.add(font2);
     
+    
+    
+    //Adding menu items to menu bar
     menubar.add(file);
     menubar.add(edit);
     menubar.add(format);
     menubar.add(search);
     menubar.setVisible(true);
    
+    
+    //Putting it all together
     frame.setJMenuBar(menubar);
     frame.getContentPane().add(panel);
     panel.setLayout(new BorderLayout());
@@ -227,7 +242,7 @@ public class TextEditor {
     }
 
     
-    
+    //Implementing New Option
     class NewMenuListener implements ActionListener{
 
             @Override
@@ -236,6 +251,7 @@ public class TextEditor {
             }
     }
     
+    //Implementing Save Option
     class SaveMenuListener implements ActionListener{
 
         @Override
@@ -253,6 +269,7 @@ public class TextEditor {
     
     }
     
+    //Implementing Save As Option
     class SaveAsMenuListener implements ActionListener{
 
                 @Override
@@ -274,6 +291,7 @@ public class TextEditor {
                 }
     }
     
+    //Implementing Open Option
     class OpenMenuListener implements ActionListener{
 
             @Override
@@ -305,15 +323,44 @@ public class TextEditor {
     }
             
     }
+    
+    //Implementing Exit Option
     class ExitMenuListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
 			frame.dispose();
 		}
 	}
     
+    
+    ////Implementing Undo Option
+     class undoManager implements ActionListener
+    {
+         public void actionPerformed(ActionEvent event)
+         {
+            try{
+                undoManager.undo();
+            }catch(CannotUndoException cue){
+                cue.printStackTrace();
+            }
+         }
+      }
+     
+     //Implementing Redo Option
+    class redo implements ActionListener
+    {
+         public void actionPerformed(ActionEvent event)
+         {
+            try{
+                undoManager.redo();
+            }catch(CannotRedoException cre){
+                cre.printStackTrace();
+            }
+    
+         }
+      }
             
      
-    
+    //Implementing Cut Option
     private class CutListener implements ActionListener{
 
         @Override
@@ -324,6 +371,7 @@ public class TextEditor {
     
     }
     
+    //Implementing Copy Option
     private class CopyListener implements ActionListener{
 
         @Override
@@ -332,6 +380,8 @@ public class TextEditor {
         }
     
     }
+    
+    //Implementing Paste Option
     private class PasteListener implements ActionListener{
 
         @Override
@@ -341,6 +391,7 @@ public class TextEditor {
     
     }
     
+    //Implementing Find Option
     class Find implements ActionListener{
         private Highlighter hilit;
         private Highlighter.HighlightPainter painter=new DefaultHighlighter.DefaultHighlightPainter(Color.MAGENTA);
@@ -421,6 +472,10 @@ public class TextEditor {
     
     }
     
+    
+    
+    
+    //Implementing Font Style Courier Option
     class FontMenuC implements ActionListener{
         
         
@@ -438,6 +493,8 @@ public class TextEditor {
         }
     }
     
+    
+    //Implementing Font Style Sans Serif Option
     class FontMenuS implements ActionListener{
         
         
@@ -455,6 +512,8 @@ public class TextEditor {
         }
     }
 
+    
+    //Implementing Font Style Monotype Corsiva Option
     class FontMenuM implements ActionListener{
         
         
@@ -472,6 +531,8 @@ public class TextEditor {
         }
     }
 
+    
+    //Implementing Font Style Arial Option
 class FontMenuA implements ActionListener{
         
         
@@ -489,6 +550,8 @@ class FontMenuA implements ActionListener{
         }
     }
 
+
+//Implementing Font Type Regular Option
 class FontMenuR implements ActionListener{
         
         
@@ -507,6 +570,7 @@ class FontMenuR implements ActionListener{
     }
 
 
+//Implementing Font Type Bold Option
 class FontMenuB implements ActionListener{
         
         
@@ -525,6 +589,7 @@ class FontMenuB implements ActionListener{
     }
 
 
+//Implementing Font Type Italics Option
 class FontMenuI implements ActionListener{
         
         
@@ -543,6 +608,8 @@ class FontMenuI implements ActionListener{
     }
 
 
+
+//Implementing Font Size 12 Option
 class FontMenuTwelve implements ActionListener{
         
         
@@ -561,6 +628,7 @@ class FontMenuTwelve implements ActionListener{
     }
 
 
+//Implementing Font Size 14 Option
 class FontMenuFourteen implements ActionListener{
         
         
@@ -578,6 +646,8 @@ class FontMenuFourteen implements ActionListener{
         }
     }
 
+
+//Implementing Font Size 18 Option
 class FontMenuEighteen implements ActionListener{
         
         
@@ -596,6 +666,7 @@ class FontMenuEighteen implements ActionListener{
     }
 
 
+//Implementing Font Size 20 Option
 class FontMenuTwenty implements ActionListener{
         
         
@@ -614,6 +685,4 @@ class FontMenuTwenty implements ActionListener{
     }
 
 }
-
-
 
