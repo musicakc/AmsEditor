@@ -1,8 +1,3 @@
-/*
-A TextEditor that opens, edits, saves files as well as having formatting options of changing font family, size and color.
-It can also search for a particular phrase in the file.
-*/
-
 package texteditor;
 
 import java.awt.*;
